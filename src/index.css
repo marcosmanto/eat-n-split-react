@@ -185,3 +185,28 @@ form h2 {
   letter-spacing: -0.5px;
   margin-bottom: 1.6rem;
 }
+
+.swal-icon {
+  transform: scale(0.55);
+  margin-block: 0;
+  transition: all 1s;
+  -webkit-animation: animateErrorIcon 0.5s;
+  animation: animateErrorIcon 0.5s;
+}
+
+@keyframes animateErrorIcon {
+  0% {
+    -webkit-transform: rotate(-120deg);
+    transform: rotate(-120deg) scale(0);
+    opacity: 0;
+  }
+  100% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg) scale(0.55);
+    opacity: 1;
+  }
+}
+
+.swal-title {
+  padding-top: 0;
+}
