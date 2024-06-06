@@ -20,9 +20,9 @@ const initialFriends = [
     balance: 0
   }
 ]
-function Button({ action, children }) {
+function Button({ action, onHover, onLeave, children }) {
   return (
-    <button onClick={action} className="button">
+    <button onClick={action} className="button" onMouseEnter={onHover} onMouseLeave={onLeave}>
       {children}
     </button>
   )
@@ -32,6 +32,7 @@ export default function App() {
   const [friends, setFriends] = useState(initialFriends)
   const [showAddFriend, setShowAddFriend] = useState(false)
   const [selectedFriend, setSelectedFriend] = useState(null)
+  const [hoverFriendSelectButton, setHoverFriendSelectButton] = useState(false)
 
   function handleToggleShowAddFriend() {
     setShowAddFriend(show => !show)
@@ -50,28 +51,28 @@ export default function App() {
   return (
     <div className="app">
       <div className="sidebar">
-        <FriendsList friends={friends} onSelectFriend={handleSelectFriend} selectedFriend={selectedFriend} />
+        <FriendsList friends={friends} onSelectFriend={handleSelectFriend} selectedFriend={selectedFriend} onSelectHover={setHoverFriendSelectButton} />
         {showAddFriend && <FormAddFriend onAddFriend={handleAddFriend} onClose={setShowAddFriend} />}
         <Button action={handleToggleShowAddFriend}>{showAddFriend ? 'Close' : 'Add friend'}</Button>
       </div>
-      {selectedFriend && <FormSplitBill friend={selectedFriend} />}
+      {selectedFriend && <FormSplitBill friend={selectedFriend} hoverFriendSelectButton={hoverFriendSelectButton} />}
     </div>
   )
 }
 
-function FriendsList({ friends, selectedFriend, onSelectFriend }) {
+function FriendsList({ friends, selectedFriend, onSelectFriend, onSelectHover }) {
   return (
     <ul>
       {friends.map(friend => (
-        <Friend selected={friend.id === selectedFriend?.id} friend={friend} key={friend.id} onSelectFriend={onSelectFriend} />
+        <Friend selected={friend.id === selectedFriend?.id} friend={friend} key={friend.id} onSelectFriend={onSelectFriend} onSelectHover={onSelectHover} />
       ))}
     </ul>
   )
 }
 
-function Friend({ friend, selected, onSelectFriend }) {
+function Friend({ friend, selected, onSelectFriend, onSelectHover }) {
   return (
-    <li className={selected && 'selected'}>
+    <li className={selected ? 'selected' : ''}>
       <img src={friend.image} alt={friend.name} />
       <h3>{friend.name}</h3>
 
@@ -86,7 +87,9 @@ function Friend({ friend, selected, onSelectFriend }) {
         </p>
       )}
       {friend.balance === 0 && <p>You and {friend.name} are even</p>}
-      <Button action={() => onSelectFriend(selected ? null : friend)}>{selected ? 'Close' : 'Select'}</Button>
+      <Button action={() => onSelectFriend(selected ? null : friend)} onHover={() => onSelectHover(true)} onLeave={() => onSelectHover(false)}>
+        {selected ? 'Close' : 'Select'}
+      </Button>
     </li>
   )
 }
@@ -144,22 +147,82 @@ function FormAddFriend({ onAddFriend }) {
   )
 }
 
-function FormSplitBill({ friend }) {
+function FormSplitBill({ friend, hoverFriendSelectButton }) {
+  const [bill, setBill] = useState('')
+  const [paidByUser, setPaidByUser] = useState('')
+  const paidByFriend = bill - paidByUser < 0 ? '—' : bill - paidByUser
+  const [whoIsPaying, setWhoIsPaying] = useState('user')
+
+  function validate(e) {
+    if (hoverFriendSelectButton) return
+    if (bill <= 0) {
+      if (e)
+        swal({
+          text: `Bill value must be filled with a value greater than zero`,
+          buttons: {
+            close: 'Close'
+          }
+        }).then(_ => e?.type !== 'submit' && e?.target.select())
+      return false
+    }
+
+    if (bill < paidByUser) {
+      if (e)
+        swal({
+          text: `Bill value must be equal or greater than your expense ($${paidByUser})`,
+          buttons: {
+            close: 'Close'
+          }
+        }).then(_ => e?.type !== 'submit' && e?.target.select())
+      return false
+    }
+
+    if (paidByUser < 0) {
+      if (e)
+        swal({
+          text: `Please fill the value you paid with a value greater or equal to 0`,
+          buttons: {
+            close: 'Close'
+          }
+        }).then(_ => e?.type !== 'submit' && e?.target.select())
+      return false
+    }
+
+    if (paidByUser > bill) {
+      if (e)
+        swal({
+          text: `The value you payed must be less or equal than the bill total ($${bill})`,
+          buttons: {
+            close: 'Close'
+          }
+        }).then(_ => e?.type !== 'submit' && e?.target.select())
+      return false
+    }
+
+    return true
+  }
+
+  function handleSubmit(e) {
+    const isValid = validate()
+    e.preventDefault()
+    if (!isValid) validate(e)
+  }
+
   return (
-    <form className="form-split-bill">
+    <form className="form-split-bill" onSubmit={handleSubmit}>
       <h2>Split a bill with {friend.name}</h2>
 
       <label htmlFor="bill-input-value">💰Bill value</label>
-      <input type="text" id="bill-input-value" />
+      <input type="number" min="0" id="bill-input-value" value={bill} onBlur={validate} onChange={e => setBill(Number(e.target.value))} />
 
       <label htmlFor="bill-your-expense">🧔‍♂️Your expense</label>
-      <input type="text" id="bill-your-expense" />
+      <input type="number" min="0" id="bill-your-expense" value={paidByUser} onBlur={validate} onChange={e => setPaidByUser(Number(e.target.value))} />
 
       <label htmlFor="bill-friend-expense">🙆‍♀️{friend.name}'s expense</label>
-      <input type="text" id="bill-friend-expense" disabled />
+      <input type="text" id="bill-friend-expense" value={paidByFriend} disabled />
 
       <label htmlFor="">💸Who is paying the bill</label>
-      <select>
+      <select value={whoIsPaying} onChange={e => setWhoIsPaying(e.target.value)}>
         <option value="user">You</option>
         <option value="friend">{friend.name}</option>
       </select>

@@ -162,6 +162,10 @@ select {
   transition: 0.3s;
 }
 
+input {
+  user-select: all;
+}
+
 form.form-add-friend input,
 form.form-split-bill input {
   width: 100%;
@@ -184,6 +188,21 @@ form h2 {
   text-transform: uppercase;
   letter-spacing: -0.5px;
   margin-bottom: 1.6rem;
+}
+
+.swal-button {
+  background-color: #ffa94d;
+  color: #495057;
+}
+
+.swal-button:not([disabled]):hover,
+.swal-button:active {
+  background-color: #ff922b;
+}
+
+.swal-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 3px rgba(255, 146, 43, 0);
 }
 
 .swal-icon {
